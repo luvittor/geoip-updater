@@ -2,6 +2,10 @@
 
 Framework-agnostic PHP 8.3+ updater for MaxMind GeoLite2/GeoIP2 databases. It uses validated staged downloads, an inter-process lock, safe archive checks and rollback of installed files. No download runs during Composer installation.
 
+## Why this package exists
+
+This dependency was created because the official MaxMind updater binary could not be used on the author's shared-hosting environment. It provides the same essential update workflow as a Composer library that runs with PHP itself: no external binary, shell command, Docker container, or resident process is required. It remains useful for Laravel applications and other constrained PHP hosting environments, while the official MaxMind tooling may still be the preferred option where it can be installed and managed.
+
 ## Install
 
 ```bash
