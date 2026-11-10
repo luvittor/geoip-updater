@@ -44,6 +44,8 @@ composer test
 
 CI runs these checks on PHP 8.3 and 8.4. Tests use fake transports and isolated temporary directories; add a legally distributable valid `.mmdb` fixture for integration tests in downstream packaging if desired.
 
+The validation tests include MaxMind's `GeoIP2-City-Test.mmdb` fixture under `tests/fixtures/`; its Apache 2.0 license is retained in `tests/fixtures-license.txt`.
+
 ## Release checklist
 
 1. Review CI and package metadata; create a GitHub release/tag `v0.1.0` only after approval.
