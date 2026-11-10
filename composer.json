@@ -1,0 +1,18 @@
+{
+  "name": "luvittor/geoip-updater",
+  "description": "Safe, framework-agnostic updater for MaxMind GeoLite2 and GeoIP2 databases.",
+  "type": "library",
+  "license": "MIT",
+  "require": {
+    "php": "^8.3",
+    "geoip2/geoip2": "^3.3"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^11.5"
+  },
+  "autoload": {"psr-4": {"Luvittor\\GeoIpUpdater\\": "src/"}},
+  "autoload-dev": {"psr-4": {"Luvittor\\GeoIpUpdater\\Tests\\": "tests/"}},
+  "scripts": {"test": "phpunit", "lint": "php -l src"},
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}
