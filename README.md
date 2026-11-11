@@ -1,6 +1,6 @@
 # GeoIP Updater
 
-Framework-agnostic PHP 8.3+ updater for MaxMind GeoLite2/GeoIP2 databases. It uses validated staged downloads, an inter-process lock, safe archive checks and rollback of installed files. No download runs during Composer installation.
+Framework-agnostic updater for MaxMind GeoLite2/GeoIP2 databases, compatible with PHP 8.3 and 8.4. It uses validated staged downloads, an inter-process lock, safe archive checks and rollback of installed files. No download runs during Composer installation.
 
 ## Why this package exists
 
@@ -54,6 +54,6 @@ The validation tests include MaxMind's `GeoIP2-City-Test.mmdb` fixture under `te
 
 ## Release checklist
 
-1. Review CI and package metadata; create a GitHub release/tag `v0.1.0` only after approval.
+1. Review CI and package metadata before creating each release tag.
 2. Push the public repository to `https://github.com/luvittor/geoip-updater` with an authorized `luvittor` identity.
 3. Submit its GitHub URL at [Packagist](https://packagist.org/packages/submit), enable the GitHub webhook, then verify `composer require luvittor/geoip-updater` in an empty project.
