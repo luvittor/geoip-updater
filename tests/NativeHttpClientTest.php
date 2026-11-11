@@ -3,6 +3,7 @@ declare(strict_types=1);
 namespace Luvittor\GeoIpUpdater\Tests;
 
 use Luvittor\GeoIpUpdater\NativeHttpClient;
+use Luvittor\GeoIpUpdater\Exception\UpdateException;
 use PHPUnit\Framework\TestCase;
 
 final class NativeHttpClientTest extends TestCase
@@ -26,4 +27,8 @@ final class NativeHttpClientTest extends TestCase
         $r=(new NativeHttpClient())->request('GET','http://127.0.0.1:'.$this->port.'/cross',['Authorization: Basic secret'],3);
         self::assertSame(200,$r->status); self::assertSame('none',$r->body);
     }
+    public function testItEnforcesRedirectLimit(): void
+    { $this->expectException(UpdateException::class); $this->expectExceptionMessage('Too many'); (new NativeHttpClient())->request('GET','http://127.0.0.1:'.$this->port.'/loop',[],3); }
+    public function testItBlocksHttpsDowngrade(): void
+    { $method=(new \ReflectionClass(NativeHttpClient::class))->getMethod('isHttpsDowngrade'); self::assertTrue($method->invoke(new NativeHttpClient(),'https://maxmind.test/a','http://maxmind.test/a')); self::assertFalse($method->invoke(new NativeHttpClient(),'https://maxmind.test/a','https://other.test/a')); }
 }

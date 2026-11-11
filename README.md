@@ -28,7 +28,7 @@ $results = $updater->update(new UpdateOptions($directory, [
 ]));
 ```
 
-Each result has `edition`, `status` (`updated`, `current`, or `failed`), path, remote version and a sanitized failure reason. Treat a `failed` result as an operational failure. Supply credentials only through environment/configuration; never log the license key.
+Each result has `edition`, `status` (`updated`, `current`, or `failed`), path, remote version and a sanitized failure reason. Failed results also expose stable structured diagnostics: `errorCode`, `phase`, `httpStatus`, and `attempts`. Use these fields instead of parsing error text. Treat a `failed` result as an operational failure. Supply credentials only through environment/configuration; never log the license key.
 
 ## Laravel adaptation
 
@@ -37,6 +37,8 @@ Bind `MaxMindTransport` and `MaxMindDatabaseValidator` in a service provider fro
 ## Guarantees and limits
 
 Before treating a local version marker as current, the updater opens the MMDB with MaxMind's reader, checks edition and build age. Archives are staged in the target filesystem and reject traversal or links. Prepared editions are validated before installation. Replacements have per-file rename/backup rollback; filesystems do **not** provide a global atomic transaction across City and ASN, so a crash or OS-level I/O failure can still require operator recovery. `Phar` support must be enabled in PHP; no shell tools, Docker, or daemon are required.
+
+HTTP redirects are followed manually so the final response is evaluated; HTTPS-to-HTTP downgrades are blocked and `Authorization` is stripped whenever the scheme, host, or port changes. Downloads are currently buffered in memory rather than streamed; streaming is planned for a future release.
 
 ## Development
 

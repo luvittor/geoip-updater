@@ -26,7 +26,7 @@ final class Updater
                     $candidate = $stage.DIRECTORY_SEPARATOR.basename($edition->targetPath); $source=$this->extractor->findDatabase($extract, basename($edition->targetPath));
                     if (!copy($source,$candidate)) throw new UpdateException('Cannot stage database.');
                     $this->assertValid($candidate,$edition,$options); $prepared[] = [$edition,$candidate,$remote->version];
-                } catch (\Throwable $e) { return [...$results, UpdateResult::failed($edition, $this->safeReason($e))]; }
+                } catch (\Throwable $e) { return [...$results, $this->failedResult($edition, $e)]; }
             }
             $this->install($prepared); foreach ($prepared as [$edition,, $version]) $results[] = new UpdateResult($edition->name, 'updated', $edition->targetPath, $version); return $results;
         } finally { $this->remove($stage); flock($lock, LOCK_UN); fclose($lock); }
@@ -46,5 +46,7 @@ final class Updater
     private function absolute(string $p): bool { return str_starts_with($p,'/') || preg_match('#^[A-Za-z]:[\\\\/]#',$p)===1 || str_starts_with($p,'\\\\'); }
     private function versionPath(Edition $e): string { return $e->targetPath.'.version'; }
     private function safeReason(\Throwable $e): string { return $e instanceof UpdateException ? $e->getMessage() : 'Update failed.'; }
+    private function failedResult(Edition $edition, \Throwable $e): UpdateResult
+    { return $e instanceof UpdateException ? UpdateResult::failed($edition, $e->getMessage(), $e->errorCode, $e->phase, $e->httpStatus, $e->attempts) : UpdateResult::failed($edition, 'Update failed.'); }
     private function remove(string $dir): void { if(!is_dir($dir)) return; $it=new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir,\FilesystemIterator::SKIP_DOTS),\RecursiveIteratorIterator::CHILD_FIRST); foreach($it as $f) $f->isDir()?@rmdir($f->getPathname()):@unlink($f->getPathname()); @rmdir($dir); }
 }

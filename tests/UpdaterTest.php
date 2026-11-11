@@ -4,6 +4,7 @@ namespace Luvittor\GeoIpUpdater\Tests;
 
 use Luvittor\GeoIpUpdater\{Edition, RemoteDatabase, UpdateOptions, Updater};
 use Luvittor\GeoIpUpdater\Contract\{DatabaseValidator, Transport};
+use Luvittor\GeoIpUpdater\Exception\UpdateException;
 use PHPUnit\Framework\TestCase;
 
 final class UpdaterTest extends TestCase
@@ -15,6 +16,7 @@ final class UpdaterTest extends TestCase
     public function testItReportsCurrentOnlyAfterValidation(): void { $e=$this->edition('City'); file_put_contents($e->targetPath,'old'); file_put_contents($e->targetPath.'.version',"v1\n"); $transport=$this->transport('v1'); $result=(new Updater($transport,$this->validator()))->update(new UpdateOptions($this->root,[$e])); self::assertSame('updated',$result[0]->status); }
     public function testPreparationFailurePreservesExistingFiles(): void { $e=$this->edition('City'); file_put_contents($e->targetPath,'old'); $transport=$this->transport('v2', true); $result=(new Updater($transport,$this->validator()))->update(new UpdateOptions($this->root,[$e])); self::assertSame('failed',$result[0]->status); self::assertSame('old',file_get_contents($e->targetPath)); }
     public function testItRejectsAnOverlappingUpdate(): void { $handle=fopen($this->root.DIRECTORY_SEPARATOR.'.geoipupdate.lock','c'); flock($handle,LOCK_EX); try { $this->expectExceptionMessage('Another GeoIP update'); $this->updater()->update(new UpdateOptions($this->root,[$this->edition('City')],30,0)); } finally { flock($handle,LOCK_UN); fclose($handle); } }
+    public function testItPreservesStructuredTransportDiagnosticsInFailedResult(): void { $edition=$this->edition('City'); $transport=new class implements Transport { public function metadata(string $product): \Luvittor\GeoIpUpdater\RemoteDatabase { throw new UpdateException('safe failure',0,null,'authentication_failed','metadata',401,1); } public function download(\Luvittor\GeoIpUpdater\RemoteDatabase $db,string $destination): void {} }; $result=(new Updater($transport,$this->validator()))->update(new UpdateOptions($this->root,[$edition])); self::assertSame('failed',$result[0]->status); self::assertSame('authentication_failed',$result[0]->errorCode); self::assertSame('metadata',$result[0]->phase); self::assertSame(401,$result[0]->httpStatus); self::assertSame(1,$result[0]->attempts); }
     private function edition(string $name): Edition { return new Edition($name,$name,$this->root.DIRECTORY_SEPARATOR.'GeoLite2-'.$name.'.mmdb'); }
     private function updater(): Updater { return new Updater($this->transport('v1'),$this->validator()); }
     private function validator(): DatabaseValidator { return new class implements DatabaseValidator { public function validate(string $path,string $type): array { if (!is_file($path) || file_get_contents($path)==='old') throw new \RuntimeException('invalid'); return ['type'=>$type,'builtAt'=>new \DateTimeImmutable('now')]; } }; }
