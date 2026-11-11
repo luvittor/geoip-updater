@@ -31,13 +31,25 @@ final class MaxMindTransportTest extends TestCase
         $client = new FakeHttpClient([new HttpResponse(401, [])]);
         $transport = new MaxMindTransport('account', 'very-secret', 'https://maxmind.test', 3, 1, 0, $client);
         try { $transport->metadata('GeoLite2-City'); self::fail('Expected failure.'); }
-        catch (UpdateException $e) { self::assertStringContainsString('HTTP 401', $e->getMessage()); self::assertStringNotContainsString('very-secret', $e->getMessage()); }
+        catch (UpdateException $e) { self::assertStringContainsString('HTTP 401', $e->getMessage()); self::assertStringNotContainsString('very-secret', $e->getMessage()); self::assertSame('authentication_failed', $e->errorCode); self::assertSame('metadata', $e->phase); self::assertSame(401, $e->httpStatus); self::assertSame(1, $e->attempts); }
+    }
+    public function testItDistinguishesForbiddenFromAuthenticationFailure(): void
+    {
+        $transport=new MaxMindTransport('account','secret','https://maxmind.test',3,1,0,new FakeHttpClient([new HttpResponse(403, [])]));
+        try { $transport->metadata('GeoLite2-City'); self::fail('Expected failure.'); } catch(UpdateException $e) { self::assertSame('authorization_failed',$e->errorCode); self::assertSame(403,$e->httpStatus); self::assertStringNotContainsString('secret',$e->getMessage()); }
     }
     public function testItWritesADownloadedArchive(): void
     {
         $client = new FakeHttpClient([new HttpResponse(200, [], 'archive')]); $file = tempnam(sys_get_temp_dir(), 'geoip-');
         (new MaxMindTransport('a', 'b', 'https://maxmind.test', 3, 1, 0, $client))->download(new RemoteDatabase('v1', 'https://maxmind.test/file'), $file);
         self::assertSame('archive', file_get_contents($file)); unlink($file);
+    }
+    public function testItProvidesStructuredDiagnosticsForTemporaryAndConnectionFailures(): void
+    {
+        $client=new FakeHttpClient([new HttpResponse(503, []), new HttpResponse(503, [])]); $t=new MaxMindTransport('a','secret','https://maxmind.test',3,2,0,$client);
+        try { $t->metadata('GeoLite2-City'); self::fail('Expected failure.'); } catch(UpdateException $e) { self::assertSame(['error_code'=>'temporary_http_failure','phase'=>'metadata','http_status'=>503,'attempts'=>2],$e->diagnostic()); self::assertStringNotContainsString('secret',$e->getMessage()); }
+        $client=new FakeHttpClient([new \RuntimeException('timeout token-secret')]); $t=new MaxMindTransport('a','secret','https://maxmind.test',3,1,0,$client);
+        try { $t->metadata('GeoLite2-City'); self::fail('Expected failure.'); } catch(UpdateException $e) { self::assertSame('network_failure',$e->errorCode); self::assertSame('metadata',$e->phase); self::assertSame(1,$e->attempts); self::assertStringNotContainsString('token-secret',$e->getMessage()); }
     }
 }
 final class FakeHttpClient implements HttpClient
